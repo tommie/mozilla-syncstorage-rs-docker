@@ -65,6 +65,7 @@ jobs:
           set -eu
           set -o pipefail
           export SYNCSTORAGE_VERSION=$(cat current-version)
+          export SYNCSTORAGE_PLATFORMS=linux/amd64,linux/arm64
           dir=$(./download-syncstorage-rs)
           echo "dir=$dir" >>"$GITHUB_OUTPUT"
           echo "version=${dir#syncstorage-rs-}" >>"$GITHUB_OUTPUT"
@@ -75,6 +76,8 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: ${{ steps.download.outputs.dir }}
+          build-args: |
+            - DATABASE_BACKEND=mysql
           #push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
