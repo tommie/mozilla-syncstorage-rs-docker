@@ -63,11 +63,12 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           annotations: |
-            manifest:org.opencontainers.image.version=${{ steps.version.outputs.version }}-{{version}}
+            manifest:org.opencontainers.image.version=${{ steps.version.outputs.version }}-{{tag}}{{branch}}
           labels: |
-            org.opencontainers.image.version=${{ steps.version.outputs.version }}-{{version}}
+            org.opencontainers.image.version=${{ steps.version.outputs.version }}-{{tag}}{{branch}}
           tags: |
-            type=semver,pattern=${{ steps.version.outputs.version }}-{{version}}
+            type=ref,prefix=${{ steps.version.outputs.version }},event=branch
+            type=ref,prefix=${{ steps.version.outputs.version }},event=tag
 
       - name: Download syncstorage-rs
         id: download
