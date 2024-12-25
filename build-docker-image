@@ -5,24 +5,14 @@ set -o pipefail
 set -x
 
 main() {
-  local version=${SYNCSTORAGE_VERSION:-master}
-  local platform=${SYNCSTORAGE_PLATFORMS:-}
+  local platform=${SYNCSTORAGE_PLATFORMS:-local}
+  local dir
 
-  if [ "x$version" = xmaster ]; then
-    if [ -d "syncstorage-rs-${version}" ]; then
-      (cd "syncstorage-rs-${version}" ; git pull)
-    else
-      git clone -b "$version" --depth=1 https://github.com/mozilla-services/syncstorage-rs.git "syncstorage-rs-${version}"
-    fi
-  else
-    ! [ -d "syncstorage-rs-${version}" ] || rm -r "syncstorage-rs-${version}"
+  dir=$(./download-syncstorage-rs)
 
-    wget -O- "https://github.com/mozilla-services/syncstorage-rs/archive/refs/tags/${version}.tar.gz" | tar xz
-  fi
+  cd "$dir"
 
-  cd "syncstorage-rs-${version}"
-
-  docker build --build-arg DATABASE_BACKEND=mysql --label syncstorage-rs --platform "$platform" --pull
+  docker build --build-arg DATABASE_BACKEND=mysql --label tommie/syncstorage-rs --platform "$platform" --pull .
 }
 
 main "$@"
