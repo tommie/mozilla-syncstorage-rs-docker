@@ -52,12 +52,22 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Extract source version
+        id: version
+        run:  echo "version=$(cat current-version)" >>"$GITHUB_OUTPUT"
+        
       # https://github.com/docker/metadata-action
       - name: Extract Docker metadata
         id: meta
         uses: docker/metadata-action@v5
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          annotations: |
+            manifest:org.opencontainers.image.version=${{ steps.version.outputs.version }}-{{version}}
+          labels: |
+            org.opencontainers.image.version=${{ steps.version.outputs.version }}-{{version}}
+          tags: |
+            type=semver,pattern=${{ steps.version.outputs.version }}-{{version}}
 
       - name: Download syncstorage-rs
         id: download
@@ -65,7 +75,6 @@ jobs:
           set -eu
           set -o pipefail
           export SYNCSTORAGE_VERSION=$(cat current-version)
-          export SYNCSTORAGE_PLATFORMS=linux/amd64,linux/arm64
           dir=$(./download-syncstorage-rs)
           echo "dir=$dir" >>"$GITHUB_OUTPUT"
           echo "version=${dir#syncstorage-rs-}" >>"$GITHUB_OUTPUT"
@@ -78,6 +87,9 @@ jobs:
           context: ${{ steps.download.outputs.dir }}
           build-args: |
             - DATABASE_BACKEND=mysql
+          platforms: |
+            - linux/amd64
+            - linux/arm64
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
@@ -85,12 +97,12 @@ jobs:
           cache-to: type=gha,mode=max
 
       # https://github.com/sigstore/cosign
-      #- name: Sign the published Docker image
-      #  if: ${{ github.event_name != 'pull_request' }}
-      #  env:
-      #    # https://docs.github.com/en/actions/security-guides/security-hardening-for-github-actions#using-an-intermediate-environment-variable
-      #    TAGS: ${{ steps.meta.outputs.tags }}
-      #    DIGEST: ${{ steps.build-and-push.outputs.digest }}
-      #  # This step uses the identity token to provision an ephemeral certificate
-      #  # against the sigstore community Fulcio instance.
-      #  run: echo "${TAGS}" | xargs -I {} cosign sign --yes {}@${DIGEST}
+      - name: Sign the published Docker image
+        if: ${{ github.event_name != 'pull_request' }}
+        env:
+          # https://docs.github.com/en/actions/security-guides/security-hardening-for-github-actions#using-an-intermediate-environment-variable
+          TAGS: ${{ steps.meta.outputs.tags }}
+          DIGEST: ${{ steps.build-and-push.outputs.digest }}
+        # This step uses the identity token to provision an ephemeral certificate
+        # against the sigstore community Fulcio instance.
+        run: echo "${TAGS}" | xargs -I {} cosign sign --yes {}@${DIGEST}
