@@ -64,7 +64,7 @@ jobs:
         run: |
           set -eu
           set -o pipefail
-          env SYNCSTORAGE_VERSION=$(cat current-version)
+          export SYNCSTORAGE_VERSION=$(cat current-version)
           dir=$(./download-syncstorage-rs)
           echo "version=${dir#syncstorage-rs-}" >>"$GITHUB_OUTPUT"
 
