@@ -86,10 +86,10 @@ jobs:
         with:
           context: ${{ steps.download.outputs.dir }}
           build-args: |
-            - DATABASE_BACKEND=mysql
+            DATABASE_BACKEND=mysql
           platforms: |
-            - linux/amd64
-            - linux/arm64
+            linux/amd64
+            linux/arm64
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
