@@ -1,0 +1,28 @@
+#!/bin/bash
+
+set -eu
+set -o pipefail
+set -x
+
+main() {
+  local version=${SYNCSTORAGE_VERSION:-master}
+  local platform=${SYNCSTORAGE_PLATFORMS:-}
+
+  if [ "x$version" = xmaster ]; then
+    if [ -d "syncstorage-rs-${version}" ]; then
+      (cd "syncstorage-rs-${version}" ; git pull)
+    else
+      git clone -b "$version" --depth=1 https://github.com/mozilla-services/syncstorage-rs.git "syncstorage-rs-${version}"
+    fi
+  else
+    ! [ -d "syncstorage-rs-${version}" ] || rm -r "syncstorage-rs-${version}"
+
+    wget -O- "https://github.com/mozilla-services/syncstorage-rs/archive/refs/tags/${version}.tar.gz" | tar xz
+  fi
+
+  cd "syncstorage-rs-${version}"
+
+  docker build --build-arg DATABASE_BACKEND=mysql --label syncstorage-rs --platform "$platform" --pull
+}
+
+main "$@"
