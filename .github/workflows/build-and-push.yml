@@ -60,18 +60,20 @@ jobs:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
 
       - name: Download syncstorage-rs
-        run: ./download-syncstorage-rs
-
-      - name: Read current version
-        id: current-version
-        run: echo "version=$(cat current-version)" >>"$GITHUB_OUTPUT"
+        id: download
+        run: |
+          set -eu
+          set -o pipefail
+          env SYNCSTORAGE_VERSION=$(cat current-version)
+          dir=$(./download-syncstorage-rs)
+          echo "version=${dir#syncstorage-rs-}" >>"$GITHUB_OUTPUT"
 
       # https://github.com/docker/build-push-action
       - name: Build and push Docker image
         id: build-and-push
         uses: docker/build-push-action@v5
         with:
-          context: syncstorage-rs-${{ steps.current-version.version }}
+          context: syncstorage-rs-${{ steps.download.version }}
           #push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
